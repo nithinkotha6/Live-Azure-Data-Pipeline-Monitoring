@@ -1,0 +1,33 @@
+SELECT
+    r.request_id,
+    r.status,
+    r.resource_class AS WorkloadGroupName,
+    COALESCE(wg.name, 'Not Assigned') AS AssignedWorkloadGroup,
+    COALESCE(wg.cap_percentage_resource, 0) AS ResourceCapPercentage,
+    CASE 
+        WHEN COALESCE(wg.cap_percentage_resource, 0) <= 25 THEN 'smallrc'
+        WHEN COALESCE(wg.cap_percentage_resource, 0) <= 50 THEN 'mediumrc'
+        WHEN COALESCE(wg.cap_percentage_resource, 0) <= 75 THEN 'largerc'
+        WHEN COALESCE(wg.cap_percentage_resource, 0) > 75 THEN 'xlargerc'
+        ELSE 'Not Assigned'
+    END AS EquivalentResourceClass,
+    CAST((COALESCE(wg.cap_percentage_resource, 0) / 100.0) * 15000 AS INT) AS DWUsConsumed,
+    DATEDIFF(MINUTE, r.start_time, GETUTCDATE()) AS RunningForMinutes,
+    DATEDIFF(HOUR, r.start_time, GETUTCDATE()) AS RunningForHours,
+    r.start_time AS StartTime,
+    r.command,
+    SUBSTRING(r.command, 1, 150) AS QueryText
+FROM sys.dm_pdw_exec_requests r
+LEFT JOIN sys.workload_management_workload_groups wg 
+    ON r.resource_class = wg.name
+WHERE r.status = 'Running'
+ORDER BY COALESCE(wg.cap_percentage_resource, 0) DESC, r.start_time ASC
+ 
+ 
+ 
+###
+SELECT status, resource_class , count(*)
+FROM sys.dm_pdw_exec_requests
+WHERE status not in ('Completed','Failed','Cancelled')   
+AND session_id <> session_id()
+group by Status, resource_class
