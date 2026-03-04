@@ -1,0 +1,32 @@
+SynapseBigDataPoolApplicationsEnded
+| extend
+    applicationName        = tostring(Properties.applicationName),
+    submitTime             = todatetime(Properties.submitTime),
+    startTime              = todatetime(Properties.startTime),
+    endTime                = todatetime(Properties.endTime),
+    livyId                 = tostring(Properties.livyId),
+    applicationId          = tostring(Properties.applicationId),
+    livyState              = tostring(Properties.livyState),
+    schedulerState         = tostring(Properties.schedulerState),
+    submitterId            = tostring(Properties.submitterId),
+    incomingCorrelationId  = tostring(Properties.incomingCorrelationId)
+    // Remove impossible system-generated timestamps like 0001-01-01
+| where startTime > datetime(1900-01-01)
+| where endTime   > datetime(1900-01-01)
+| extend
+    NotebookName = extract(@"^(.*)_[^_]+_\d+$", 1, applicationName),
+    SparkPool    = extract(@"_(?<spark>[^_]+)_(\d+)$", 1, applicationName),
+    RandomId     = extract(@"_(\d+)$", 1, applicationName)
+| extend
+    // Raw run time (timespan)
+    Runtime = endTime - startTime
+| project
+    TimeGenerated,
+    NotebookName,
+    SparkPool,
+    Runtime,
+    startTime,
+    endTime,
+    RandomId,
+    applicationName
+| order by Runtime desc
