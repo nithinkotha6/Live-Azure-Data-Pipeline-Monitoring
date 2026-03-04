@@ -1,0 +1,34 @@
+SynapseIntegrationPipelineRuns
+| where Start >= ago(30d)
+| where End > Start
+| where End != datetime(1601-01-01T00:00:00Z)
+| where isnotempty(PipelineName)
+| extend RunDuration = End - Start
+| summarize 
+    TotalRuns = count(),
+    SuccessfulRuns = countif(Status == "Succeeded"),
+    FailedRuns = countif(Status == "Failed"),
+    InProgressRuns = countif(Status == "InProgress"),
+    AverageRunDuration = avg(RunDuration),
+    MinRunDuration = min(RunDuration),
+    MaxRunDuration = max(RunDuration)
+    by PipelineName
+| extend SuccessRate = strcat(tostring(round((SuccessfulRuns * 100.0) / TotalRuns, 2)), "%")
+| extend AvgRunDurationSeconds = toint(AverageRunDuration / 1s)
+| extend AvgRunDurationHHMM = strcat(
+                               tostring(AvgRunDurationSeconds / 3600),
+                               "h ",
+                               tostring((AvgRunDurationSeconds % 3600) / 60),
+                               "m"
+                           )
+| project 
+    PipelineName,
+    TotalRuns,
+    SuccessfulRuns,
+    FailedRuns,
+    InProgressRuns,
+    SuccessRate,
+    AvgRunDurationHHMM,
+    MinRunDuration,
+    MaxRunDuration
+| order by TotalRuns desc
