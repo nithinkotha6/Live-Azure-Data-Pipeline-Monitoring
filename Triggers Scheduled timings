@@ -1,0 +1,7 @@
+SynapseIntegrationTriggerRuns 
+| where TimeGenerated >= ago(24h) 
+| extend Params = parse_json(Parameters) 
+| extend ScheduledTime = todatetime(Params.ScheduleTime), TriggerTime = todatetime(Params.TriggerTime), TriggerObject = parse_json(Params.triggerObject) 
+| project TriggerName, TriggerType, ScheduledTime, ActualTriggerTime = TriggerTime, ActualStartTime = Start, Status, DelayMilliseconds = datetime_diff('millisecond', TriggerTime, ScheduledTime) 
+| distinct TriggerName, TriggerType, ScheduledTime, ActualTriggerTime, Status, DelayMilliseconds 
+| order by ScheduledTime desc
