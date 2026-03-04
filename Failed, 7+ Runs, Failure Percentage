@@ -1,0 +1,7 @@
+let lookback = 30d; let rangeStart = ago(lookback); SynapseIntegrationPipelineRuns 
+| where Start >= rangeStart 
+| summarize TotalRuns = count(), FailedRuns = countif(Status == "Failed") by PipelineName 
+| where TotalRuns >= 4 
+| extend FailurePercentage = round(100.0 * todouble(FailedRuns) / todouble(TotalRuns), 2) 
+| where FailurePercentage > 10.0 
+| order by FailurePercentage desc, FailedRuns desc, TotalRuns desc
