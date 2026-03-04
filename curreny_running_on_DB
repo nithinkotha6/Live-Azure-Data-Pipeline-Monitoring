@@ -1,0 +1,9 @@
+SynapseSqlPoolExecRequests 
+| where StartTime >= ago(24h) 
+| where Status == "Running" or isnull(EndTime) 
+| extend DurationSeconds = datetime_diff("second", now(), StartTime) 
+| extend Hours = floor(DurationSeconds / 3600.0, 1) 
+| extend Minutes = floor((DurationSeconds % 3600.0) / 60.0, 1) 
+| extend Duration_HHMM = strcat(tostring(Hours), ":", tostring(Minutes)) 
+| project StartTime, RequestId, Command, StatementType, Status, Duration_HHMM 
+| order by StartTime asc
