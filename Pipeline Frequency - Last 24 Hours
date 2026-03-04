@@ -1,0 +1,27 @@
+let lookback = 24h;
+let rangeStart = ago(lookback);
+let windowHours = max_of(1.0, todouble(datetime_diff('hour', now(), rangeStart)));
+let MinEnd = datetime(1601-01-01 00:00:00.0000000Z);
+
+SynapseIntegrationPipelineRuns
+| where Start >= rangeStart
+| where Status in ("Succeeded", "Failed")
+| where End != MinEnd
+| summarize
+    TotalRuns = count(),
+    FailedRuns = countif(Status == "Failed")
+    by PipelineName
+| extend
+    AvgRunsPerHour = round(TotalRuns / windowHours, 2),
+    MinutesBetweenRuns = round(60.0 / AvgRunsPerHour, 2)
+| extend Frequency =
+    case(
+        TotalRuns == 0, "No runs",
+        MinutesBetweenRuns >= 60, strcat("Every ", tostring(round(MinutesBetweenRuns/60.0,1)), " hours"),
+        MinutesBetweenRuns >= 30, "Every 30 mins",
+        MinutesBetweenRuns >= 15, "Every 15 mins",
+        MinutesBetweenRuns >= 5,  "Every 5 mins",
+        MinutesBetweenRuns >= 1,  "Every 1 min",
+        "Multiple per minute"
+    )
+| order by TotalRuns desc
