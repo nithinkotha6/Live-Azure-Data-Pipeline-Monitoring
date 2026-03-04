@@ -1,0 +1,4 @@
+SynapseIntegrationTriggerRuns 
+| where TimeGenerated >= ago(24h) 
+| summarize TriggerCount = count(), TriggerNames = make_set(TriggerName) by bin(TimeGenerated, 1h) 
+| order by TimeGenerated asc
