@@ -1,0 +1,9 @@
+SynapseIntegrationPipelineRuns 
+| where Start >= startofday(now()) 
+| where OperationName endswith "InProgress" 
+| where Status == "InProgress" 
+| where PipelineName !="Email_Notification" 
+| extend RuntimeSeconds = datetime_diff('second', now(), Start) 
+| extend RuntimeHHMM = strcat( tostring(bin(RuntimeSeconds / 3600, 1)), "h ", tostring(bin((RuntimeSeconds % 3600) / 60, 1)), "m" ) 
+| project PipelineName, Start, Status, OperationName,RunId, RuntimeHHMM 
+| order by Start asc
